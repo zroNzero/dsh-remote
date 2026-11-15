@@ -96,8 +96,6 @@ window.__ModuleLoader__.load({
       var [note, setNote] = useState('');
       var [busy, setBusy] = useState(false);
       var [workspaces, setWorkspaces] = useState([]);
-      var [remoteQq, setRemoteQq] = useState(null);
-      var [remoteErr, setRemoteErr] = useState('');
 
       function loadWorkspaces() {
         return api('/workspaces').then(function (result) {
@@ -220,19 +218,6 @@ window.__ModuleLoader__.load({
         });
       }
 
-      function rotate() {
-        setBusy(true);
-        setError('');
-        api('/token', { method: 'POST', body: '{}' }).then(function (result) {
-          patch('token', result.token);
-          setNote('token 已更新');
-        }).catch(function (reason) {
-          setError(reason && reason.message ? reason.message : '生成失败');
-        }).finally(function () {
-          setBusy(false);
-        });
-      }
-
       if (!form) {
         return h('div', { className: 'rw-page' },
           h('div', { className: 'rw-card' },
@@ -242,34 +227,9 @@ window.__ModuleLoader__.load({
 
       var caps = status && status.capabilities ? status.capabilities : {};
       var server = status && status.server ? status.server : {};
-      var addresses = Array.isArray(server.addresses) ? server.addresses : [];
-      var primary = addresses.find(function (item) { return item.global; }) || addresses[0];
       var canServe = caps.canServe === true;
       var qqAvailable = caps.serveEnabled === true;
       var qqStatus = status && status.qq ? status.qq : {};
-
-      function loadRemoteQq() {
-        setRemoteErr('');
-        api('/qq-remote').then(function (value) {
-          setRemoteQq(value && value.ok ? value : null);
-          if (value && !value.ok) setRemoteErr(value.error || '读取失败');
-        }, function (error) {
-          setRemoteErr(error && error.message ? error.message : '读取失败');
-        });
-      }
-
-      function pushRemote(patch) {
-        setRemoteErr('');
-        api('/qq-remote', {
-          method: 'POST',
-          body: JSON.stringify(patch),
-        }).then(function (value) {
-          if (value && value.ok) setRemoteQq(value);
-          else setRemoteErr((value && value.error) || '写入失败');
-        }, function (error) {
-          setRemoteErr(error && error.message ? error.message : '写入失败');
-        });
-      }
 
       var currentSessions = [];
       for (var index = 0; index < workspaces.length; index += 1) {
@@ -279,40 +239,6 @@ window.__ModuleLoader__.load({
         }
       }
 
-      function remoteWorkspaceList(snapshot) {
-        var items = snapshot.workspaces || [];
-        var options = [h('option', { value: '' }, '自动')];
-        for (var cursor = 0; cursor < items.length; cursor += 1) {
-          options.push(h('option', { value: items[cursor].path },
-            (items[cursor].title || items[cursor].path) + ' · ' + (items[cursor].sessions || []).length));
-        }
-        return h(Field, { label: '工作区', hint: '写入电脑端' },
-          h('select', {
-            className: 'rw-select',
-            value: snapshot.workspaceCwd || '',
-            onChange: function (event) { pushRemote({ cwd: event.target.value, sessionId: '' }); },
-          }, options));
-      }
-
-      function remoteSessionList(snapshot) {
-        var items = snapshot.workspaces || [];
-        var target = [];
-        for (var cursor = 0; cursor < items.length; cursor += 1) {
-          if (items[cursor].path === snapshot.workspaceCwd) { target = items[cursor].sessions || []; break; }
-        }
-        var options = [h('option', { value: '' }, '新建专用会话')];
-        for (var row = 0; row < target.length; row += 1) {
-          options.push(h('option', { value: target[row].id },
-            (target[row].title || '(untitled)') + (target[row].live ? ' · 在线' : '')));
-        }
-        return h(Field, { label: '对话', hint: '写入电脑端' },
-          h('select', {
-            className: 'rw-select',
-            value: snapshot.workspaceSessionId || '',
-            onChange: function (event) { pushRemote({ sessionId: event.target.value }); },
-          }, options));
-      }
-
       return h('div', { className: 'rw-page' },
         h('div', { className: 'rw-card' },
           h('div', { className: 'rw-head' }, h('h3', null, '远程执行'),
@@ -320,8 +246,6 @@ window.__ModuleLoader__.load({
           h(Row, { label: '状态' }, server.error
             ? h('span', { className: 'rw-err' }, server.error.message || '监听失败')
             : (server.listening ? '监听中' : (canServe ? '未监听' : '仅客户端'))),
-          h(Row, { label: '端口' }, String(server.port || form.port)),
-          h(Row, { label: 'IPv6' }, primary ? primary.address : '无 IPv6'),
           h(Row, { label: '同步结果' }, status && status.reader && status.reader.enabled
             ? String(status.reader.unread || 0)
             : '未启用'),
@@ -339,22 +263,6 @@ window.__ModuleLoader__.load({
             status && status.configRole !== form.role ? h('span', { className: 'rw-hint' }, '重启生效') : null,
             note ? h('span', { className: 'rw-hint' }, note) : null,
             error ? h('span', { className: 'rw-err' }, error) : null)),
-        h('div', { className: 'rw-card' },
-          h('h3', null, '连接'),
-          h(Field, { label: '电脑 IPv6' },
-            h('input', { className: 'rw-input', value: form.peerHost, placeholder: '2xxx:...',
-              onChange: function (event) { patch('peerHost', event.target.value); } })),
-          h(Field, { label: '电脑端口' },
-            h('input', { className: 'rw-input', type: 'number', value: form.peerPort,
-              onChange: function (event) { patch('peerPort', event.target.value); } })),
-          h(Field, { label: 'token' },
-            h('input', { className: 'rw-input', value: form.token, placeholder: '两端一致',
-              onChange: function (event) { patch('token', event.target.value); } })),
-          h(Field, { label: '离线钩子', hint: '原样带入错误' },
-            h('input', { className: 'rw-input', value: form.onOffline, placeholder: 'offline_queue',
-              onChange: function (event) { patch('onOffline', event.target.value); } })),
-          canServe ? h('div', { className: 'rw-actions' },
-            h('button', { className: 'rw-btn', type: 'button', disabled: busy, onClick: rotate }, '生成 token')) : null),
         qqAvailable ? h('div', { className: 'rw-card' },
           h('div', { className: 'rw-head' },
             h('h3', null, 'QQ 通道'),
@@ -440,19 +348,7 @@ window.__ModuleLoader__.load({
               onChange: function (event) { patch('allowCommands', event.target.value); } })),
           h(Field, { label: '目录', hint: '默认用户 home' },
             h('textarea', { className: 'rw-area', value: form.allowCwd,
-              onChange: function (event) { patch('allowCwd', event.target.value); } }))) : null,
-        !qqAvailable ? h('div', { className: 'rw-card' },
-          h('h3', null, '电脑端 QQ 通道'),
-          h(Row, { label: '电脑' }, form.peerHost ? form.peerHost : '未配置 peerHost'),
-          h(Row, { label: '状态' }, remoteErr
-            ? h('span', { className: 'rw-err' }, String(remoteErr).slice(0, 15))
-            : (remoteQq ? String(remoteQq.state || '未知') : '未读取')),
-          remoteQq ? h(Row, { label: '当前工作区' }, remoteQq.workspaceCwd || '自动') : null,
-          remoteQq ? h(Row, { label: '当前对话' }, remoteQq.workspaceSessionId || '自动') : null,
-          h(Row, { label: '刷新' },
-            h('button', { className: 'rw-btn', type: 'button', onClick: loadRemoteQq }, '读取电脑端')),
-          remoteQq ? remoteWorkspaceList(remoteQq) : null,
-          remoteQq ? remoteSessionList(remoteQq) : null) : null);
+              onChange: function (event) { patch('allowCwd', event.target.value); } }))) : null);
     }
 
     function apply(ctx) {

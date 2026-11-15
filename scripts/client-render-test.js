@@ -41,31 +41,65 @@ function render(props) {
   return { tree, hooks: cursor }
 }
 
-// 1) loading state (form null) — simulates first paint before fetch resolves
-cursor = 0
-slots = []
-const loading = render({})
-
-// 2) second render with form present — this is where hook-order violations throw
-slots[1] = {
+// hook slots: 0 status, 1 form, 2 error, 3 note, 4 busy, 5 workspaces
+const FORM = {
   role: 'host',
   peerHost: '',
+  peerPort: 3099,
+  token: '',
+  onOffline: '',
   allowCommands: '',
   allowCwd: '',
-  qq: { enabled: true, appId: '1', mode: 'natural', whitelist: '', sessionId: '', cwd: 'D:\\PC\\dsh', retentionKeep: 200 },
+  qq: {
+    enabled: true,
+    appId: '1',
+    mode: 'natural',
+    whitelist: '',
+    sessionId: '',
+    cwd: 'D:\\PC\\dsh',
+    retentionKeep: 200,
+  },
 }
-slots[2] = { capabilities: { canServe: true, serveEnabled: true } }
-slots[3] = { qq: { state: 'ready' } }
+
+const HOST_STATUS = {
+  capabilities: { canServe: true, serveEnabled: true },
+  server: { listening: true, port: 3099, addresses: [{ address: 'fe80::1', global: false }] },
+  reader: { enabled: true, unread: 0 },
+  qq: { state: 'ready', allowAll: true },
+}
+
+const CLIENT_STATUS = {
+  capabilities: { canServe: false, serveEnabled: false },
+  server: { listening: false },
+  reader: { enabled: false, unread: 0 },
+  qq: { state: 'disabled' },
+}
+
+// 1) first paint before config resolves
+const loading = render({})
+
+// 2) host panel with config + status
+slots[0] = HOST_STATUS
+slots[1] = FORM
 const loaded = render({})
 
-// 3) loaded render with workspaces populated
-slots[9] = [{ id: 'w1', title: 'dsh', path: 'D:\\PC\\dsh', sessions: [{ id: 'session-1', title: 'T' }] }]
+// 3) host panel with workspaces + selected session
+slots[5] = [{
+  id: 'w1',
+  title: 'dsh',
+  path: 'D:\\PC\\dsh',
+  sessions: [{ id: 'session-1', title: 'T', live: true }],
+}]
 const withWs = render({})
 
-// 4) remote snapshot present
-slots[10] = { workspaceCwd: 'D:\\PC\\dsh', workspaceSessionId: '', workspaces: [{ id: 'w1', title: 'dsh', path: 'D:\\PC\\dsh', sessions: [] }] }
-const withRemote = render({})
+// 4) client-only panel (mobile): no serve capability, no QQ card
+slots[0] = CLIENT_STATUS
+slots[1] = { ...FORM, role: 'client' }
+const mobile = render({})
 
-const counts = [loading.hooks, loaded.hooks, withWs.hooks, withRemote.hooks]
-console.log('hook counts:', counts.join(','), 'stable:', counts.every((c) => c === counts[0]))
-console.log('all renders produced a tree:', Boolean(loading.tree && loaded.tree && withWs.tree && withRemote.tree))
+const counts = [loading.hooks, loaded.hooks, withWs.hooks, mobile.hooks]
+const stable = counts.every((c) => c === counts[0])
+const trees = [loading.tree, loaded.tree, withWs.tree, mobile.tree]
+console.log('hook counts:', counts.join(','), 'stable:', stable)
+console.log('all renders produced a tree:', trees.every(Boolean))
+if (!stable || !trees.every(Boolean)) process.exitCode = 1

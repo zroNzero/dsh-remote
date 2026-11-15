@@ -107,7 +107,8 @@ $DSH_HOME/profiles/web/node_modules/dsh-remote-worker/
 | `maxConcurrent` | `1` | 并发任务数；超出回 `ERR_REJECTED` |
 | `onOffline` | 空 | 离线时原样带回错误对象的字符串，不执行 |
 
-设置页可改 role、port、token、peerHost、peerPort、命令白名单、目录白名单、onOffline。role/port 保存后提示「重启生效」。
+设置页只编辑 role、QQ 通道、命令白名单、目录白名单。role 保存后提示「重启生效」。
+token、peerHost、peerPort、onOffline 不在设置页编辑，仍保留在配置文件中并原样保存；IPv6 直连相关界面已移除，`/api/token` 等接口保留。
 
 QQ 通道配置在设置页「QQ 通道」卡片，仅电脑端可见。配置保存后即时重启 QQ WSS，不需要重启 DSH。AppSecret 与 token 一样明文保存在本机配置文件，日志和状态接口不回显 AppSecret。
 
