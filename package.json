@@ -1,0 +1,53 @@
+{
+  "name": "dsh-remote-worker",
+  "version": "1.0.0",
+  "description": "手机重任务经 IPv6 直连电脑执行，结果流式回传。",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "core",
+    "scripts",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml",
+    "probe-result.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "probe": "node scripts/probe.js",
+    "test": "node scripts/selftest.js",
+    "qq-test": "node scripts/qq-selftest.js"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "remote",
+    "ipv6",
+    "websocket",
+    "qqbot"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {},
+  "license": "MIT"
+}

@@ -1,0 +1,4 @@
+- insert:
+    - id: dsh-remote-worker
+      name: dsh-remote-worker
+      config: {}
