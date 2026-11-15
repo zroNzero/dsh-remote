@@ -127,6 +127,8 @@ export async function apply(ctx, rawConfig = {}) {
     startedAt: Date.now(),
     qqSkip: '',
     routesStale: false,
+    routesMounted: 0,
+    webServerMissing: false,
     disposed: false,
     version: '1.0.0',
   }
@@ -392,13 +394,20 @@ function registerPrompt(ctx, runtime) {
 
 function mountApi(ctx, runtime) {
   const install = (sub) => {
-    const webServer = serviceOf(sub, 'webServer')
-    if (!webServer || typeof webServer.register !== 'function') return
+    const webServer = readWebServer(sub)
+    if (!webServer || typeof webServer.register !== 'function') {
+      runtime.webServerMissing = true
+      log(ctx, '无 webServer，设置页停用')
+      return
+    }
+    runtime.webServerMissing = false
+    runtime.routesMounted = 0
     sub.effect(() => {
       const disposers = []
       const mount = (options) => {
         try {
           disposers.push(webServer.register(options))
+          runtime.routesMounted += 1
         } catch (error) {
           if (!/duplicate/i.test(String(error && error.message))) throw error
           runtime.routesStale = true
@@ -706,6 +715,15 @@ function agentIds(ctx) {
   } catch {
     return []
   }
+}
+
+function readWebServer(ctx) {
+  if (!ctx) return null
+  let server = null
+  try { server = ctx.webServer } catch { server = null }
+  if (!server) server = serviceOf(ctx, 'webServer')
+  if (!server || typeof server.register !== 'function') return null
+  return server
 }
 
 function serviceOf(ctx, name) {

@@ -48,10 +48,15 @@ window.__ModuleLoader__.load({
         ...(options || {}),
       }).then(function (response) {
         return response.json().catch(function () { return {}; }).then(function (body) {
-          if (!response.ok || body.ok === false) throw new Error(body.error || '请求失败');
-          return body;
-        });
-      });
+          if (!response.ok || body.ok === false) {
+            var message = body.error || (body.error && body.error.message) || '请求失败'
+            throw new Error(message + '（HTTP ' + response.status + '）')
+          }
+          return body
+        })
+      }, function (error) {
+        throw new Error('网络不可达（' + (error && error.message ? error.message : 'fetch failed') + '）')
+      })
     }
 
     function Row(props) {
