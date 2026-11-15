@@ -3,7 +3,8 @@ import { probeIPv6 } from './ipv6.js'
 import { isMobileRuntime, runtimeKind } from './platform.js'
 
 export async function detectCapabilities(ctx) {
-  const loadedShell = await waitForShell(ctx, 1500)
+  const mobile = isMobileRuntime()
+  const loadedShell = mobile ? null : await waitForShell(ctx, 1500)
   let ipv6
   try {
     ipv6 = await probeIPv6()
@@ -19,7 +20,6 @@ export async function detectCapabilities(ctx) {
     }
   }
   const shell = loadedShell || readShell(ctx)
-  const mobile = isMobileRuntime()
   const canSpawn = shell !== null && !mobile && PROBE_DEFAULTS.spawnBlocked !== true
   const canServe = canSpawn && ipv6.bindAny
   const canDispatch = true
@@ -66,7 +66,6 @@ export function readShell(ctx) {
   if (!ctx || typeof ctx.get !== 'function') return null
   let shell = null
   try { shell = ctx.get('shell') } catch { shell = null }
-  if (!shell && ctx.shell) shell = ctx.shell
   if (!shell || typeof shell.resolve !== 'function' || typeof shell.execute !== 'function') return null
   return shell
 }
