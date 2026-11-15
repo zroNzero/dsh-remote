@@ -623,6 +623,8 @@ function statusOf(runtime) {
     configPath: configPath(),
     startedAt: runtime.startedAt,
     routesStale: runtime.routesStale === true,
+    routesMounted: runtime.routesMounted,
+    webServerMissing: runtime.webServerMissing === true,
   }
 }
 
