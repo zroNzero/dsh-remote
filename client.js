@@ -96,6 +96,8 @@ window.__ModuleLoader__.load({
       var [note, setNote] = useState('');
       var [busy, setBusy] = useState(false);
       var [workspaces, setWorkspaces] = useState([]);
+      var [remoteQq, setRemoteQq] = useState(null);
+      var [remoteErr, setRemoteErr] = useState('');
 
       function loadWorkspaces() {
         return api('/workspaces').then(function (result) {
@@ -246,9 +248,6 @@ window.__ModuleLoader__.load({
       var qqAvailable = caps.serveEnabled === true;
       var qqStatus = status && status.qq ? status.qq : {};
 
-      var [remoteQq, setRemoteQq] = React.useState(null);
-      var [remoteErr, setRemoteErr] = React.useState('');
-
       function loadRemoteQq() {
         setRemoteErr('');
         api('/qq-remote').then(function (value) {
@@ -278,6 +277,40 @@ window.__ModuleLoader__.load({
           currentSessions = workspaces[index].sessions || [];
           break;
         }
+      }
+
+      function remoteWorkspaceList(snapshot) {
+        var items = snapshot.workspaces || [];
+        var options = [h('option', { value: '' }, '自动')];
+        for (var cursor = 0; cursor < items.length; cursor += 1) {
+          options.push(h('option', { value: items[cursor].path },
+            (items[cursor].title || items[cursor].path) + ' · ' + (items[cursor].sessions || []).length));
+        }
+        return h(Field, { label: '工作区', hint: '写入电脑端' },
+          h('select', {
+            className: 'rw-select',
+            value: snapshot.workspaceCwd || '',
+            onChange: function (event) { pushRemote({ cwd: event.target.value, sessionId: '' }); },
+          }, options));
+      }
+
+      function remoteSessionList(snapshot) {
+        var items = snapshot.workspaces || [];
+        var target = [];
+        for (var cursor = 0; cursor < items.length; cursor += 1) {
+          if (items[cursor].path === snapshot.workspaceCwd) { target = items[cursor].sessions || []; break; }
+        }
+        var options = [h('option', { value: '' }, '新建专用会话')];
+        for (var row = 0; row < target.length; row += 1) {
+          options.push(h('option', { value: target[row].id },
+            (target[row].title || '(untitled)') + (target[row].live ? ' · 在线' : '')));
+        }
+        return h(Field, { label: '对话', hint: '写入电脑端' },
+          h('select', {
+            className: 'rw-select',
+            value: snapshot.workspaceSessionId || '',
+            onChange: function (event) { pushRemote({ sessionId: event.target.value }); },
+          }, options));
       }
 
       return h('div', { className: 'rw-page' },
@@ -418,43 +451,8 @@ window.__ModuleLoader__.load({
           remoteQq ? h(Row, { label: '当前对话' }, remoteQq.workspaceSessionId || '自动') : null,
           h(Row, { label: '刷新' },
             h('button', { className: 'rw-btn', type: 'button', onClick: loadRemoteQq }, '读取电脑端')),
-          remoteQq ? remoteWorkspaceList() : null,
-          remoteQq ? remoteSessionList() : null) : null);
-    }
-
-    function remoteWorkspaceList() {
-      var items = (remoteQq.workspaces || []);
-      var options = [h('option', { value: '' }, '自动')];
-      for (var index = 0; index < items.length; index += 1) {
-        options.push(h('option', { value: items[index].path },
-          (items[index].title || items[index].path) + ' · ' + items[index].sessions.length));
-      }
-      return h(Field, { label: '工作区', hint: '写入电脑端' },
-        h('select', {
-          className: 'rw-select',
-          value: remoteQq.workspaceCwd || '',
-          onChange: function (event) { pushRemote({ cwd: event.target.value, sessionId: '' }); },
-        }, options));
-    }
-
-    function remoteSessionList() {
-      var target = '';
-      var items = (remoteQq.workspaces || []);
-      for (var index = 0; index < items.length; index += 1) {
-        if (items[index].path === remoteQq.workspaceCwd) { target = items[index].sessions || []; break; }
-      }
-      var options = [h('option', { value: '' }, '新建专用会话')];
-      for (var cursor = 0; cursor < target.length; cursor += 1) {
-        var item = target[cursor];
-        options.push(h('option', { value: item.id },
-          (item.title || '(untitled)') + (item.live ? ' · 在线' : '')));
-      }
-      return h(Field, { label: '对话', hint: '写入电脑端' },
-        h('select', {
-          className: 'rw-select',
-          value: remoteQq.workspaceSessionId || '',
-          onChange: function (event) { pushRemote({ sessionId: event.target.value }); },
-        }, options));
+          remoteQq ? remoteWorkspaceList(remoteQq) : null,
+          remoteQq ? remoteSessionList(remoteQq) : null) : null);
     }
 
     function apply(ctx) {

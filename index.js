@@ -668,6 +668,9 @@ async function qqTargetSnapshot(ctx, runtime) {
     workspaces = []
   }
   return {
+    workspaceCwd: runtime.config.qq.cwd,
+    workspaceSessionId: runtime.config.qq.sessionId,
+    workspaces,
     qq: {
       enabled: runtime.config.qq.enabled,
       mode: runtime.config.qq.mode,
@@ -675,7 +678,6 @@ async function qqTargetSnapshot(ctx, runtime) {
       sessionId: runtime.config.qq.sessionId,
       state: runtime.qq ? runtime.qq.status().state : 'stopped',
     },
-    workspaces,
   }
 }
 
