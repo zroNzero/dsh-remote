@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
     var useState = React.useState;
     var useEffect = React.useEffect;
 
-    var API = '/dsh-remote-worker/api';
+    var API = '/dsh-remote-worker/api2';
     var STYLE_ID = 'dsh-remote-worker-style';
 
     function installStyles() {
@@ -251,7 +251,7 @@ window.__ModuleLoader__.load({
 
       function loadRemoteQq() {
         setRemoteErr('');
-        api('/dsh-remote-worker/api2/qq-remote').then(function (value) {
+        api('/qq-remote').then(function (value) {
           setRemoteQq(value && value.ok ? value.snapshot : null);
           if (value && !value.ok) setRemoteErr(value.error || '读取失败');
         }, function (error) {
@@ -261,7 +261,7 @@ window.__ModuleLoader__.load({
 
       function pushRemote(patch) {
         setRemoteErr('');
-        api('/dsh-remote-worker/api2/qq-remote', {
+        api('/qq-remote', {
           method: 'POST',
           body: JSON.stringify(patch),
         }).then(function (value) {
