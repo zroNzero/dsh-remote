@@ -251,7 +251,7 @@ window.__ModuleLoader__.load({
       function loadRemoteQq() {
         setRemoteErr('');
         api('/qq-remote').then(function (value) {
-          setRemoteQq(value && value.ok ? value.snapshot : null);
+          setRemoteQq(value && value.ok ? value : null);
           if (value && !value.ok) setRemoteErr(value.error || '读取失败');
         }, function (error) {
           setRemoteErr(error && error.message ? error.message : '读取失败');
@@ -264,7 +264,7 @@ window.__ModuleLoader__.load({
           method: 'POST',
           body: JSON.stringify(patch),
         }).then(function (value) {
-          if (value && value.ok) setRemoteQq(value.snapshot);
+          if (value && value.ok) setRemoteQq(value);
           else setRemoteErr((value && value.error) || '写入失败');
         }, function (error) {
           setRemoteErr(error && error.message ? error.message : '写入失败');
