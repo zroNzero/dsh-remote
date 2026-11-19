@@ -3,19 +3,20 @@
 把重活交给电脑跑，手机只负责发号施令和看结果。
 
 DeepSeek Harness 插件。零第三方依赖、无原生模块、不 spawn 子进程，WebSocket 按 RFC6455 手写实现。
-
 ---
 
 ## 它能做什么
 
 | 能力 | 在哪运行 | 怎么用 |
 | --- | --- | --- |
-| IPv6 直连派发命令 | 电脑当服务端，手机当客户端 | `remote_execute` 工具 |
 | QQ 官方机器人通道 | 电脑 | 手机 QQ 直接发消息给机器人 |
 | 结果同步到手机 | 手机 | `sync_read_result` 工具 |
 | 设置面板 | 两边同款 | 设置 → 远程执行 |
+| IPv6 直连派发 | **已舍弃** | 需要公网 IPv6 地址，多数网络没有。代码保留，不再维护 |
 
 典型用法：**手机 QQ 发一句"帮我编译一下"，电脑执行，结果落成文件，手机上用一条命令读出来。**
+
+当前唯一可用的派发路径是 QQ 通道。IPv6 直连（`remote_execute` + WebSocket 服务端）因缺少公网 IPv6 地址已停止使用，相关配置和接口仍在，但不要依赖它。
 
 ---
 
@@ -49,9 +50,9 @@ gh_install_plugin  zroNzero/dsh-remote
 
 ## 快速开始：让手机 QQ 指挥电脑
 
-### 第 1 步：配置角色
+### 第 1 步：确认插件加载
 
-打开 **设置 → 远程执行**，`role` 选 `host`（默认 `auto` 也会自动判断，电脑有 shell 就是 host）。
+打开 **设置 → 远程执行**，能看到面板和 `qq.state` 就说明插件已加载。角色字段（`role`）只在 IPv6 直连时有用，QQ 通道不需要设置，保持默认 `auto` 即可。
 
 ### 第 2 步：拿 QQ 机器人凭证
 
@@ -201,7 +202,9 @@ sync_read_result { "id": "qq-78cc…", "offset": 65536, "limit": 65536 }   翻�
 
 ---
 
-## remote_execute 工具
+## remote_execute 工具（IPv6 直连，已舍弃）
+
+> 这条路径需要手机和电脑都有公网 IPv6 地址，当前网络不可用，**不要再依赖它**。QQ 通道是替代方案。
 
 电脑当 host 时，这个工具会出现在工具列表里。手机会用它把重活派过来。
 
@@ -236,7 +239,7 @@ remote_execute { "command": "npm run build", "cwd": "D:\\PC\\my-app", "timeoutMs
 | POST | `/qq-remote` | 改 QQ 目标，改动立即生效 |
 | GET | `/workspaces` | 工作区与对话列表（带标题） |
 | POST | `/workspaces` | 强制重新扫描 |
-| POST | `/token` | 轮换访问 token |
+| POST | `/token` | 轮换访问 token（直连用，已舍弃） |
 
 `/status` 里有几个好用的诊断字段：
 
@@ -358,10 +361,13 @@ IPv6 直连需要真的公网地址。没有的话用 QQ 通道——它走 WebS
 npm test        # 20 项：协议、分帧、能力探测、执行器
 npm run qq-test # 19 项：QQ 协议、通道、结果、分页、清理
 npm run ui-test # 面板渲染、hooks 稳定性
+npm run reader-test # 7 项：手机端读取器，不需要真机
 npm run probe   # 环境探测
 ```
 
 `ui-test` 会断言四个渲染路径（加载中、已加载、有工作区、有远端快照）产生的 hook 数量一致。往组件里加 hook 时别放到提前 `return` 后面，否则这个测试会失败，而线上表现就是面板空白。
+
+`reader-test` 用临时 `DSH_HOME` 跑真实文件，覆盖扫描、去重、分页、重启后不重复、保留清理，不需要手机。
 
 ### 目录
 

@@ -36,7 +36,8 @@
     "probe": "node scripts/probe.js",
     "test": "node scripts/selftest.js",
     "qq-test": "node scripts/qq-selftest.js",
-    "ui-test": "node scripts/client-render-test.js"
+    "ui-test": "node scripts/client-render-test.js",
+    "reader-test": "node scripts/reader-selftest.js"
   },
   "keywords": [
     "deepseek-harness",

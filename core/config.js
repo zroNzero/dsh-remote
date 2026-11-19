@@ -21,6 +21,8 @@ export function configPath() {
 
 export function defaultConfig() {
   return {
+    // IPv6 直连已舍弃：role/port/token/peerHost/peerPort/onOffline/connectTimeoutMs
+    // 仅为兼容旧配置保留，新部署不要再设置。派发走 qq 通道。
     role: 'auto',
     port: 3099,
     token: '',
